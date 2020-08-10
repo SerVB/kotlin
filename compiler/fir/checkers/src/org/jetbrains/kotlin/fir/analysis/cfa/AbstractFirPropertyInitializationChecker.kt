@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 
-abstract class AbstractFirPropertyInitializationChecker {
+abstract class AbstractFirCFAPropertyAssignmentChecker {
     abstract fun analyze(
         graph: ControlFlowGraph,
         reporter: DiagnosticReporter,

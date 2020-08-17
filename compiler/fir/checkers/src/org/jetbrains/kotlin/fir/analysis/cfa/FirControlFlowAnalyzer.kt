@@ -27,16 +27,19 @@ class FirControlFlowAnalyzer(session: FirSession) {
         if (graph.owner != null) return
 
         cfaCheckers.forEach { it.analyze(graph, reporter, context) }
-
-        val properties = AbstractFirCfaPropertyAssignmentChecker.LocalPropertyCollector.collect(graph)
-        if (properties.isEmpty()) return
-        val data = AbstractFirCfaPropertyAssignmentChecker.DataCollector(properties).getData(graph)
-
-        variableAssignmentCheckers.forEach { it.analyze(graph, reporter, data, properties) }
+        runVariableAssignmentCheckers(graph, reporter)
     }
 
     fun analyzePropertyInitializer(property: FirProperty, graph: ControlFlowGraph, context: CheckerContext, reporter: DiagnosticReporter) {
         if (graph.owner != null) return
         cfaCheckers.forEach { it.analyze(graph, reporter, context) }
+    }
+
+    private fun runVariableAssignmentCheckers(graph: ControlFlowGraph, reporter: DiagnosticReporter) {
+        val properties = AbstractFirCfaPropertyAssignmentChecker.LocalPropertyCollector.collect(graph)
+        if (properties.isEmpty()) return
+        val data = AbstractFirCfaPropertyAssignmentChecker.DataCollector(properties).getData(graph)
+
+        variableAssignmentCheckers.forEach { it.analyze(graph, reporter, data, properties) }
     }
 }

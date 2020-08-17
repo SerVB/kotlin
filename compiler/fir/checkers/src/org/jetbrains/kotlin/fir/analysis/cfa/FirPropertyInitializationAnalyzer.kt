@@ -31,7 +31,7 @@ object FirPropertyInitializationAnalyzer : AbstractFirCfaPropertyAssignmentCheck
             symbolFir == null || symbolFir.initializer == null && symbolFir.delegate == null
         }
 
-        val localProperties = properties.filter { it.fir.initializer == null && it.fir.delegate == null }.toSet()
+        val localProperties = properties.filter { it.fir.initializer == null && it.fir.delegate == null && it.fir.isLocal }.toSet()
 
         val reporterVisitor = UninitializedPropertyReporter(localData, localProperties, reporter)
         graph.traverse(TraverseDirection.Forward, reporterVisitor)

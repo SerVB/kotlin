@@ -1,4 +1,34 @@
 FILE: localVariable.kt
+    public final class Outer : R|kotlin/Any| {
+        public constructor(): R|Outer| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun foo(): R|kotlin/Unit| {
+            local final class Local : R|kotlin/Any| {
+                public constructor(): R|Outer.Local| {
+                    super<R|kotlin/Any|>()
+                }
+
+                public final fun bar(): R|kotlin/Unit| {
+                    lval x: R|kotlin/String| = this@R|/Outer|.R|/Outer.y|
+                }
+
+            }
+
+        }
+
+        public final val y: R|kotlin/String| = String()
+            public get(): R|kotlin/String|
+
+    }
+    public final fun f(): R|kotlin/Unit| {
+        lval a: R|kotlin/Int| = Int(1)
+        local final fun g(): R|kotlin/Int| {
+            ^g R|<local>/a|
+        }
+
+    }
     public final fun foo(v: R|kotlin/Int|): R|kotlin/Unit| {
         lval d: R|kotlin/Int|by Q|Delegate|
         lval a: R|kotlin/Int|

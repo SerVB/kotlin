@@ -16,9 +16,13 @@ import org.jetbrains.kotlin.fir.analysis.checkers.isIterator
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
+import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.references.FirResolvedNamedReference
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
+import org.jetbrains.kotlin.fir.toFirPsiSourceElement
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.psiUtil.children
 
 object UnusedChecker : FirControlFlowChecker() {
     override fun analyze(graph: ControlFlowGraph, reporter: DiagnosticReporter, checkerContext: CheckerContext) {
@@ -41,7 +45,8 @@ object UnusedChecker : FirControlFlowChecker() {
             val data = data[node]?.get(variableSymbol) ?: return
             if (data == VariableStatus.ONLY_WRITTEN_NEVER_READ) {
                 // todo: report case like "a += 1" where `a` `doesn't writes` different way (special for Idea)
-                reporter.report(node.fir.source, FirErrors.ASSIGNED_VALUE_IS_NEVER_READ)
+                val source = node.fir.psi?.children?.first()?.toFirPsiSourceElement()
+                reporter.report(source, FirErrors.ASSIGNED_VALUE_IS_NEVER_READ)
             }
         }
 
@@ -52,14 +57,19 @@ object UnusedChecker : FirControlFlowChecker() {
             when (data) {
                 VariableStatus.UNUSED -> {
                     if ((node.fir.initializer as? FirFunctionCall)?.isIterator != true) {
-                        reporter.report(variableSymbol.fir.source, FirErrors.UNUSED_VARIABLE)
+                        val source = variableSymbol.fir.psi?.node?.children()
+                            ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+                        reporter.report(source, FirErrors.UNUSED_VARIABLE)
                     }
                 }
                 VariableStatus.REDUNDANT_INIT -> {
-                    reporter.report(variableSymbol.fir.source, FirErrors.VARIABLE_INITIALIZER_IS_REDUNDANT)
+                    val source = variableSymbol.fir.initializer?.source
+                    reporter.report(source, FirErrors.VARIABLE_INITIALIZER_IS_REDUNDANT)
                 }
                 VariableStatus.ONLY_WRITTEN_NEVER_READ -> {
-                    reporter.report(variableSymbol.fir.source, FirErrors.VARIABLE_NEVER_READ)
+                    val source = variableSymbol.fir.psi?.node?.children()
+                        ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+                    reporter.report(source, FirErrors.VARIABLE_NEVER_READ)
                 }
                 else -> {
                 }

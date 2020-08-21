@@ -25,6 +25,6 @@ object ExtendedDeclarationCheckers : DeclarationCheckers() {
         VariableAssignmentChecker,
     )
     override val controlFlowAnalyserCheckers: List<FirControlFlowChecker> = listOf(
-        UnusedChecker
+        //UnusedChecker
     )
 }

@@ -164,7 +164,6 @@ object UnusedChecker : FirControlFlowChecker() {
 
         override fun visitVariableAssignmentNode(node: VariableAssignmentNode, data: Collection<VariableStatusInfo>): VariableStatusInfo {
             val dataForNode = visitNode(node, data)
-            if (node.fir.source?.kind is FirFakeSourceElementKind) return dataForNode
             val reference = node.fir.lValue as? FirResolvedNamedReference ?: return dataForNode
             val symbol = reference.resolvedSymbol as? FirPropertySymbol ?: return dataForNode
             val toPut = when {

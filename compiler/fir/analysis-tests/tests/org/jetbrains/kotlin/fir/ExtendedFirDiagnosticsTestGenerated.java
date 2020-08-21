@@ -339,6 +339,11 @@ public class ExtendedFirDiagnosticsTestGenerated extends AbstractExtendedFirDiag
             runTest("compiler/fir/analysis-tests/testData/extendedCheckers/unused/localVariable.kt");
         }
 
+        @TestMetadata("manyLocalVariables.kt")
+        public void testManyLocalVariables() throws Exception {
+            runTest("compiler/fir/analysis-tests/testData/extendedCheckers/unused/manyLocalVariables.kt");
+        }
+
         @TestMetadata("valueIsNeverRead.kt")
         public void testValueIsNeverRead() throws Exception {
             runTest("compiler/fir/analysis-tests/testData/extendedCheckers/unused/valueIsNeverRead.kt");

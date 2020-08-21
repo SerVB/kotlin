@@ -54,5 +54,5 @@ object CommonDeclarationCheckers : DeclarationCheckers() {
 
     override val variableAssignmentCfaBasedCheckers: List<AbstractFirCfaPropertyAssignmentChecker> = listOf(
         FirPropertyInitializationAnalyzer,
-    ) //+ ExtendedDeclarationCheckers.variableAssignmentCfaBasedCheckers
+    ) + ExtendedDeclarationCheckers.variableAssignmentCfaBasedCheckers
 }

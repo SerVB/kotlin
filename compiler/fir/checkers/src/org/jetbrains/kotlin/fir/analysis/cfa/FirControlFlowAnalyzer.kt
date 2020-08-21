@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.FirFunction
 import org.jetbrains.kotlin.fir.declarations.FirProperty
+import org.jetbrains.kotlin.fir.declarations.FirPropertyAccessor
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph
 
 class FirControlFlowAnalyzer(session: FirSession) {
@@ -27,19 +28,28 @@ class FirControlFlowAnalyzer(session: FirSession) {
         if (graph.owner != null) return
 
         cfaCheckers.forEach { it.analyze(graph, reporter, context) }
-        runVariableAssignmentCheckers(graph, reporter)
+        if (context.containingDeclarations.any { it is FirProperty || it is FirFunction<*> }) return
+        runAssignmentCfaCheckers(graph, reporter)
     }
 
     fun analyzePropertyInitializer(property: FirProperty, graph: ControlFlowGraph, context: CheckerContext, reporter: DiagnosticReporter) {
         if (graph.owner != null) return
+
         cfaCheckers.forEach { it.analyze(graph, reporter, context) }
+        runAssignmentCfaCheckers(graph, reporter)
     }
 
-    private fun runVariableAssignmentCheckers(graph: ControlFlowGraph, reporter: DiagnosticReporter) {
-        val properties = AbstractFirCfaPropertyAssignmentChecker.LocalPropertyCollector.collect(graph)
-        if (properties.isEmpty()) return
-        val data = AbstractFirCfaPropertyAssignmentChecker.DataCollector(properties).getData(graph)
+    fun analyzePropertyAccessor(accessor: FirPropertyAccessor, graph: ControlFlowGraph, context: CheckerContext, reporter: DiagnosticReporter) {
+        if (graph.owner != null) return
 
+        cfaCheckers.forEach { it.analyze(graph, reporter, context) }
+        runAssignmentCfaCheckers(graph, reporter)
+    }
+
+    private fun runAssignmentCfaCheckers(graph: ControlFlowGraph, reporter: DiagnosticReporter) {
+        val properties = LocalPropertyCollector.collect(graph)
+        if (properties.isEmpty()) return
+        val data = PropertyInitializationInfoCollector(properties).getData(graph)
         variableAssignmentCheckers.forEach { it.analyze(graph, reporter, data, properties) }
     }
 }

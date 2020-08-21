@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.psi.psiUtil.children
 object UnusedChecker : FirControlFlowChecker() {
     override fun analyze(graph: ControlFlowGraph, reporter: DiagnosticReporter, checkerContext: CheckerContext) {
         if ((graph.declaration as? FirSymbolOwner<*>)?.getContainingClass(checkerContext) != null) return
-        val properties = AbstractFirCfaPropertyAssignmentChecker.LocalPropertyCollector.collect(graph)
+        val properties = LocalPropertyCollector.collect(graph)
         if (properties.isEmpty()) return
 
         val data = ValueWritesWithoutReading(properties).getData(graph)

@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.fir.analysis.checkers.extended
 
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
+import org.jetbrains.kotlin.fir.FirFakeSourceElementKind
 import org.jetbrains.kotlin.fir.FirSymbolOwner
 import org.jetbrains.kotlin.fir.analysis.cfa.*
 import org.jetbrains.kotlin.fir.analysis.checkers.cfa.FirControlFlowChecker
@@ -54,19 +55,19 @@ object UnusedChecker : FirControlFlowChecker() {
             val variableSymbol = node.fir.symbol
             val data = data[node]?.get(variableSymbol) ?: return
 
-            when (data) {
-                VariableStatus.UNUSED -> {
+            when {
+                data == VariableStatus.UNUSED -> {
                     if ((node.fir.initializer as? FirFunctionCall)?.isIterator != true) {
                         val source = variableSymbol.fir.psi?.node?.children()
                             ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
                         reporter.report(source, FirErrors.UNUSED_VARIABLE)
                     }
                 }
-                VariableStatus.REDUNDANT_INIT -> {
+                data.isRedundantInit -> {
                     val source = variableSymbol.fir.initializer?.source
                     reporter.report(source, FirErrors.VARIABLE_INITIALIZER_IS_REDUNDANT)
                 }
-                VariableStatus.ONLY_WRITTEN_NEVER_READ -> {
+                data == VariableStatus.ONLY_WRITTEN_NEVER_READ -> {
                     val source = variableSymbol.fir.psi?.node?.children()
                         ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
                     reporter.report(source, FirErrors.VARIABLE_NEVER_READ)
@@ -78,13 +79,13 @@ object UnusedChecker : FirControlFlowChecker() {
     }
 
     enum class VariableStatus(private val priority: Int) {
-        READ(4),
-        WRITTEN_AFTER_READ(3),
-        ONLY_WRITTEN_NEVER_READ(2),
-        UNUSED(1),
-        REDUNDANT_INIT(0);
+        READ(3),
+        WRITTEN_AFTER_READ(2),
+        ONLY_WRITTEN_NEVER_READ(1),
+        UNUSED(0);
 
         var isRead = false
+        var isRedundantInit = false
 
         fun merge(variableUseState: VariableStatus?): VariableStatus {
             val base = if (variableUseState == null || priority > variableUseState.priority) this
@@ -92,6 +93,7 @@ object UnusedChecker : FirControlFlowChecker() {
 
             return base.also {
                 it.isRead = this.isRead || variableUseState?.isRead == true
+                it.isRedundantInit = this.isRedundantInit && variableUseState?.isRedundantInit == true
             }
         }
     }
@@ -122,8 +124,10 @@ object UnusedChecker : FirControlFlowChecker() {
     private class ValueWritesWithoutReading(
         private val localProperties: Set<FirPropertySymbol>
     ) : ControlFlowGraphVisitor<VariableStatusInfo, Collection<VariableStatusInfo>>() {
-        fun getData(graph: ControlFlowGraph) =
-            graph.collectDataForNode(TraverseDirection.Backward, VariableStatusInfo.EMPTY, ValueWritesWithoutReading(localProperties))
+        fun getData(graph: ControlFlowGraph): Map<CFGNode<*>, VariableStatusInfo> {
+            println("getting data for local properties set ${localProperties.joinToString()}")
+            return graph.collectDataForNode(TraverseDirection.Backward, VariableStatusInfo.EMPTY, this)
+        }
 
         override fun visitNode(node: CFGNode<*>, data: Collection<VariableStatusInfo>): VariableStatusInfo {
             if (data.isEmpty()) return VariableStatusInfo.EMPTY
@@ -132,6 +136,7 @@ object UnusedChecker : FirControlFlowChecker() {
 
         override fun visitVariableDeclarationNode(node: VariableDeclarationNode, data: Collection<VariableStatusInfo>): VariableStatusInfo {
             val dataForNode = visitNode(node, data)
+            if (node.fir.source?.kind is FirFakeSourceElementKind) return dataForNode
             val symbol = node.fir.symbol
             return when (dataForNode[symbol]) {
                 null -> {
@@ -139,7 +144,9 @@ object UnusedChecker : FirControlFlowChecker() {
                 }
                 VariableStatus.ONLY_WRITTEN_NEVER_READ, VariableStatus.WRITTEN_AFTER_READ -> {
                     if (node.fir.initializer != null && dataForNode[symbol]?.isRead == true) {
-                        dataForNode.put(symbol, VariableStatus.REDUNDANT_INIT)
+                        val newData = dataForNode[symbol] ?: VariableStatus.UNUSED
+                        newData.isRedundantInit = true
+                        dataForNode.put(symbol, newData)
                     } else if (node.fir.initializer != null) {
                         dataForNode.put(symbol, VariableStatus.ONLY_WRITTEN_NEVER_READ)
                     } else {
@@ -157,6 +164,7 @@ object UnusedChecker : FirControlFlowChecker() {
 
         override fun visitVariableAssignmentNode(node: VariableAssignmentNode, data: Collection<VariableStatusInfo>): VariableStatusInfo {
             val dataForNode = visitNode(node, data)
+            if (node.fir.source?.kind is FirFakeSourceElementKind) return dataForNode
             val reference = node.fir.lValue as? FirResolvedNamedReference ?: return dataForNode
             val symbol = reference.resolvedSymbol as? FirPropertySymbol ?: return dataForNode
             val toPut = when {
@@ -182,6 +190,7 @@ object UnusedChecker : FirControlFlowChecker() {
 
         override fun visitQualifiedAccessNode(node: QualifiedAccessNode, data: Collection<VariableStatusInfo>): VariableStatusInfo {
             val dataForNode = visitNode(node, data)
+            if (node.fir.source?.kind is FirFakeSourceElementKind) return dataForNode
             val reference = node.fir.calleeReference as? FirResolvedNamedReference ?: return dataForNode
             val symbol = reference.resolvedSymbol as? FirPropertySymbol ?: return dataForNode
 

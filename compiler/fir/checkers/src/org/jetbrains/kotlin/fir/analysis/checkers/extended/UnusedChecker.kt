@@ -58,8 +58,7 @@ object UnusedChecker : FirControlFlowChecker() {
             when {
                 data == VariableStatus.UNUSED -> {
                     if ((node.fir.initializer as? FirFunctionCall)?.isIterator != true) {
-                        val source = variableSymbol.fir.psi?.node?.children()
-                            ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+                        val source = variableSymbol.identifierSource
                         reporter.report(source, FirErrors.UNUSED_VARIABLE)
                     }
                 }
@@ -68,8 +67,7 @@ object UnusedChecker : FirControlFlowChecker() {
                     reporter.report(source, FirErrors.VARIABLE_INITIALIZER_IS_REDUNDANT)
                 }
                 data == VariableStatus.ONLY_WRITTEN_NEVER_READ -> {
-                    val source = variableSymbol.fir.psi?.node?.children()
-                        ?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+                    val source = variableSymbol.identifierSource
                     reporter.report(source, FirErrors.VARIABLE_NEVER_READ)
                 }
                 else -> {
@@ -200,4 +198,7 @@ object UnusedChecker : FirControlFlowChecker() {
             return dataForNode.put(symbol, status)
         }
     }
+
+    private val FirPropertySymbol.identifierSource
+        get() = fir.psi?.node?.children()?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
 }

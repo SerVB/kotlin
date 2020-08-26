@@ -45,11 +45,13 @@ object FirErrors {
     val ERROR_FROM_JAVA_RESOLUTION by error0<FirSourceElement, PsiElement>()
     val UNKNOWN_CALLABLE_KIND by error0<FirSourceElement, PsiElement>()
     val MISSING_STDLIB_CLASS by error0<FirSourceElement, PsiElement>()
+    val NO_THIS by error0<FirSourceElement, PsiElement>()
 
     // Super
     val SUPER_IS_NOT_AN_EXPRESSION by error0<FirSourceElement, PsiElement>()
     val SUPER_NOT_AVAILABLE by error0<FirSourceElement, PsiElement>()
     val ABSTRACT_SUPER_CALL by error0<FirSourceElement, PsiElement>()
+    val INSTANCE_ACCESS_BEFORE_SUPER_CALL by error1<FirSourceElement, PsiElement, String>()
 
     // Supertypes
     val TYPE_PARAMETER_AS_SUPERTYPE by error0<FirSourceElement, PsiElement>()
@@ -107,6 +109,7 @@ object FirErrors {
     // Applicability
     val NONE_APPLICABLE by error1<FirSourceElement, PsiElement, Collection<AbstractFirBasedSymbol<*>>>()
     val INAPPLICABLE_CANDIDATE by error1<FirSourceElement, PsiElement, AbstractFirBasedSymbol<*>>()
+    val INAPPLICABLE_LATEINIT_MODIFIER by error1<FirSourceElement, PsiElement, String>()
 
     // Ambiguity
     val AMBIGUITY by error1<FirSourceElement, PsiElement, Collection<AbstractFirBasedSymbol<*>>>()
@@ -124,6 +127,11 @@ object FirErrors {
     val TYPE_PARAMETERS_IN_OBJECT by error0<FirSourceElement, PsiElement>()
     val ILLEGAL_PROJECTION_USAGE by error0<FirSourceElement, PsiElement>()
     val TYPE_PARAMETERS_IN_ENUM by error0<FirSourceElement, PsiElement>()
+    val CONFLICTING_PROJECTION by error1<FirSourceElement, PsiElement, String>()
+    val VARIANCE_ON_TYPE_PARAMETER_NOT_ALLOWED by error0<FirSourceElement, PsiElement>()
+    val RETURN_TYPE_MISMATCH_ON_OVERRIDE by error2<FirSourceElement, PsiElement, String, FirMemberDeclaration>()
+    val PROPERTY_TYPE_MISMATCH_ON_OVERRIDE by error2<FirSourceElement, PsiElement, String, FirMemberDeclaration>()
+    val VAR_TYPE_MISMATCH_ON_OVERRIDE by error2<FirSourceElement, PsiElement, String, FirMemberDeclaration>()
 
     // Redeclarations
     val MANY_COMPANION_OBJECTS by error0<FirSourceElement, PsiElement>()

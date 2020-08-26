@@ -5,10 +5,11 @@
 
 package org.jetbrains.kotlin.fir.analysis.checkers.extended
 
+import com.intellij.lang.LighterASTNode
+import com.intellij.openapi.util.Ref
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
-import org.jetbrains.kotlin.fir.FirFakeSourceElementKind
-import org.jetbrains.kotlin.fir.FirSymbolOwner
+import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.cfa.*
 import org.jetbrains.kotlin.fir.analysis.checkers.cfa.FirControlFlowChecker
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
@@ -17,11 +18,9 @@ import org.jetbrains.kotlin.fir.analysis.checkers.isIterator
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
-import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.references.FirResolvedNamedReference
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
-import org.jetbrains.kotlin.fir.toFirPsiSourceElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.psiUtil.children
 
@@ -46,7 +45,7 @@ object UnusedChecker : FirControlFlowChecker() {
             val data = data[node]?.get(variableSymbol) ?: return
             if (data == VariableStatus.ONLY_WRITTEN_NEVER_READ) {
                 // todo: report case like "a += 1" where `a` `doesn't writes` different way (special for Idea)
-                val source = node.fir.psi?.children?.first()?.toFirPsiSourceElement()
+                val source = node.fir.lValue.source
                 reporter.report(source, FirErrors.ASSIGNED_VALUE_IS_NEVER_READ)
             }
         }
@@ -199,6 +198,22 @@ object UnusedChecker : FirControlFlowChecker() {
         }
     }
 
-    private val FirPropertySymbol.identifierSource
-        get() = fir.psi?.node?.children()?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+    private val FirPropertySymbol.identifierSource: FirSourceElement?
+        get() {
+            return when (fir.source) {
+                is FirPsiSourceElement<*> -> {
+                    fir.psi?.node?.children()?.find { it.elementType == KtTokens.IDENTIFIER }?.psi?.toFirPsiSourceElement()
+                }
+                is FirLightSourceElement -> {
+                    val source = fir.source as FirLightSourceElement
+                    val children = Ref<Array<LighterASTNode?>>()
+                    val tree = source.tree
+                    tree.getChildren(source.element, children)
+                    children.get()?.filterNotNull()?.firstOrNull { it.tokenType == KtTokens.IDENTIFIER }?.let {
+                        it.toFirLightSourceElement(it.startOffset, it.endOffset, tree)
+                    }
+                }
+                else -> null
+            }
+        }
 }

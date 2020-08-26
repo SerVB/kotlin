@@ -24,7 +24,8 @@ object CommonDeclarationCheckers : DeclarationCheckers() {
         FirTypeParametersInObjectChecker,
         FirConflictsChecker,
         FirConstructorInInterfaceChecker,
-    ) //+ ExtendedDeclarationCheckers.declarationCheckers
+        FirConflictingProjectionChecker,
+    )
 
     override val memberDeclarationCheckers: List<FirMemberDeclarationChecker> = listOf(
         FirInfixFunctionDeclarationChecker,
@@ -39,20 +40,24 @@ object CommonDeclarationCheckers : DeclarationCheckers() {
         FirInterfaceWithSuperclassChecker,
         FirEnumClassSimpleChecker,
         FirSealedSupertypeChecker,
-    ) //+ ExtendedDeclarationCheckers.memberDeclarationCheckers
+        FirInapplicableLateinitChecker,
+        FirTypeMismatchOnOverrideChecker,
+    )
 
-    //override val regularClassCheckers: List<FirRegularClassChecker> = ExtendedDeclarationCheckers.regularClassCheckers
+    override val regularClassCheckers: List<FirRegularClassChecker> = listOf(
+
+    )
 
     override val constructorCheckers: List<FirConstructorChecker> = listOf(
         FirConstructorAllowedChecker,
-    ) //+ ExtendedDeclarationCheckers.constructorCheckers
+    )
 
     override val controlFlowAnalyserCheckers: List<FirControlFlowChecker> = listOf(
         FirCallsEffectAnalyzer,
-        FirReturnsImpliesAnalyzer,
-    ) //+ ExtendedDeclarationCheckers.controlFlowAnalyserCheckers
+        FirReturnsImpliesAnalyzer
+    )
 
     override val variableAssignmentCfaBasedCheckers: List<AbstractFirCfaPropertyAssignmentChecker> = listOf(
-        FirPropertyInitializationAnalyzer,
-    ) + ExtendedDeclarationCheckers.variableAssignmentCfaBasedCheckers
+        FirPropertyInitializationAnalyzer
+    )
 }

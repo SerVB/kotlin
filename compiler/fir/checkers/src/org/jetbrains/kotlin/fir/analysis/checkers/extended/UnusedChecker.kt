@@ -198,5 +198,5 @@ object UnusedChecker : FirControlFlowChecker() {
     }
 
     private val FirPropertySymbol.identifierSource: FirSourceElement?
-        get() = fir.source?.getChildren(KtTokens.IDENTIFIER, 0, 2)
+        get() = fir.source?.getChildren(KtTokens.IDENTIFIER, 0, 1)
 }

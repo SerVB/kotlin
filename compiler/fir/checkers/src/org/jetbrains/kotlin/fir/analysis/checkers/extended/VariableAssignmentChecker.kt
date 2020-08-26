@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.fir.analysis.checkers.extended
 
 import com.intellij.lang.LighterASTNode
 import com.intellij.openapi.util.Ref
+import org.jetbrains.kotlin.KtNodeTypes
 import org.jetbrains.kotlin.contracts.description.EventOccurrencesRange
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.cfa.AbstractFirPropertyInitializationChecker
@@ -16,11 +17,11 @@ import org.jetbrains.kotlin.fir.analysis.cfa.TraverseDirection
 import org.jetbrains.kotlin.fir.analysis.cfa.traverse
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors
+import org.jetbrains.kotlin.fir.analysis.getChildren
 import org.jetbrains.kotlin.fir.references.FirResolvedNamedReference
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtProperty
 
 
 object VariableAssignmentChecker : AbstractFirPropertyInitializationChecker() {
@@ -47,9 +48,9 @@ object VariableAssignmentChecker : AbstractFirPropertyInitializationChecker() {
         var lastDestructuredVariables = 0
 
         for ((symbol, value) in propertiesCharacteristics) {
-            val source = symbol.getValOrVarSource
+            val source = symbol.fir.source?.getChildren(setOf(KtTokens.VAL_KEYWORD, KtTokens.VAR_KEYWORD), depth = 1)
             if (symbol.callableId.callableName.asString() == "<destruct>") {
-                lastDestructuringSource = symbol.getValOrVarSource
+                lastDestructuringSource = source
                 lastDestructuredVariables = symbol.getDestructuringChildrenCount() ?: continue
                 destructuringCanBeVal = true
                 continue
@@ -104,24 +105,6 @@ object VariableAssignmentChecker : AbstractFirPropertyInitializationChecker() {
         }
     }
 
-    private val FirPropertySymbol.getValOrVarSource
-        get() = when (fir.source) {
-            is FirSourceElement -> {
-                (fir.psi as? KtProperty)?.valOrVarKeyword?.toFirPsiSourceElement()
-                    ?: fir.psi?.firstChild?.toFirPsiSourceElement()
-                    ?: fir.source
-            }
-            is FirLightSourceElement -> {
-                val children = Ref<Array<LighterASTNode>>()
-                val tree = (fir.source as FirLightSourceElement).tree
-                tree.getChildren(tree.root, children)
-                children.get().first { it.tokenType == KtTokens.VAL_KEYWORD || it.tokenType == KtTokens.VAR_KEYWORD }.let {
-                    it.toFirLightSourceElement(it.startOffset, it.endOffset, tree)
-                }
-            }
-            else -> null
-        }
-
     private fun FirPropertySymbol.getDestructuringChildrenCount(): Int? = when (fir.source) {
         is FirPsiSourceElement<*> -> fir.psi?.children?.size?.minus(1) // -1 cuz we don't need expression node after equals operator
         is FirLightSourceElement -> {
@@ -129,7 +112,7 @@ object VariableAssignmentChecker : AbstractFirPropertyInitializationChecker() {
             val tree = (fir.source as FirLightSourceElement).tree
             val children = Ref<Array<LighterASTNode?>>()
             tree.getChildren(source.element, children)
-            children.get().count { it != null }
+            children.get().filterNotNull().filter { it.tokenType == KtNodeTypes.DESTRUCTURING_DECLARATION_ENTRY }.size
         }
         else -> null
     }

@@ -1,3 +1,10 @@
+class FinalDerived : Base() {
+    // Redundant final
+    override <!REDUNDANT_MODALITY_MODIFIER!>final<!> fun bar() {}
+    // Non-final member in final class
+    override open val gav = 13
+}
+
 object O {
     fun foo() {}
 }
@@ -43,12 +50,6 @@ abstract class Base {
     open val gav = 42
 }
 
-class FinalDerived : Base() {
-    // Redundant final
-    override <!REDUNDANT_MODALITY_MODIFIER!>final<!> fun bar() {}
-    // Non-final member in final class
-    override open val gav = 13
-}
 // Open
 open class OpenDerived : Base() {
     // Final

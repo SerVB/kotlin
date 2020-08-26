@@ -1,4 +1,16 @@
 FILE: RedundantModalityModifierChecker.kt
+    public final class FinalDerived : R|Base| {
+        public constructor(): R|FinalDerived| {
+            super<R|Base|>()
+        }
+
+        public final override fun bar(): R|kotlin/Unit| {
+        }
+
+        public open override val gav: R|kotlin/Int| = Int(13)
+            public get(): R|kotlin/Int|
+
+    }
     public final object O : R|kotlin/Any| {
         private constructor(): R|O| {
             super<R|kotlin/Any|>()
@@ -62,18 +74,6 @@ FILE: RedundantModalityModifierChecker.kt
         public abstract fun bar(): R|kotlin/Unit|
 
         public open val gav: R|kotlin/Int| = Int(42)
-            public get(): R|kotlin/Int|
-
-    }
-    public final class FinalDerived : R|Base| {
-        public constructor(): R|FinalDerived| {
-            super<R|Base|>()
-        }
-
-        public final override fun bar(): R|kotlin/Unit| {
-        }
-
-        public open override val gav: R|kotlin/Int| = Int(13)
             public get(): R|kotlin/Int|
 
     }
